@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <title>Aisyah IPTV - Login & Streaming</title>
+  <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+  <style>
+    body {
+      font-family: sans-serif;
+      background-color: #111;
+      color: white;
+      margin: 0;
+      padding: 0;
+    }
+    .container {
+      max-width: 720px;
+      margin: 0 auto;
+      padding: 20px;
+      text-align: center;
+    }
+    input, button, select {
+      padding: 10px;
+      margin: 10px;
+      border-radius: 5px;
+      border: none;
+      font-size: 16px;
+    }
+    button {
+      background-color: #28a745;
+      color: white;
+      cursor: pointer;
+    }
+    video {
+      width: 100%;
+      max-width: 720px;
+      height: auto;
+      border-radius: 5px;
+      box-shadow: 0 0 21px #000;
+      margin-top: 20px;
+    }
+    .error {
+      color: red;
+      display: none;
+    }
+    #iptv-box {
+      display: none;
+    }
+  </style>
+</head>
+<body oncontextmenu="return false;" onkeydown="return disableKeys(event)">
+  <div class="container" id="login-box">
+    <h2>Login Pelanggan IPTV</h2>
+    <input type="text" id="username" placeholder="Nama Pengguna"><br>
+    <input type="text" id="key" placeholder="Kode Akses"><br>
+    <button onclick="login()">Masuk</button>
+    <div class="error" id="errorMsg">Username atau Key salah!</div>
+  </div>
+
+  <div class="container" id="iptv-box">
+    <h1>Aisyah IPTV</h1>
+    <p>📺 Streaming TV Indonesia</p>
+    <video id="video" controls autoplay muted playsinline></video><br>
+    <label for="channelSelect">Pilih Channel:</label><br>
+    <select id="channelSelect">
+      <option value="https://nusantaratv.siar.us/nusantaratv/live/playlist.m3u8">Nusantara TV</option>
+      <option value="https://stream.jogjatv.co.id/jtvlive/stream/index.m3u8">Jogja TV</option>
+      <option value="https://primatv.siar.us/primatv/live/playlist.m3u8">Prima TV</option>
+      <option value="https://saktitv.siar.us/saktitv/live/playlist.m3u8">Sakti TV</option>
+      <option value="https://stream.carubantv.id/hls/0/stream.m3u8">Caruban TV</option>
+      <option value="https://ott-balancer.tvri.go.id/live/eds/TVRIWorld/hls/TVRIWorld.m3u8">TVRI World</option>
+      <option value="https://ott-balancer.tvri.go.id/live/eds/SportHD/hls/SportHD.m3u8">TVRI Sport</option>
+      <option value="https://video.detik.com/trans7/smil:trans7.smil/index.m3u8">Trans7 TV</option>
+      <option value="https://video.detik.com/transtv/smil:transtv.smil/index.m3u8">Trans TV</option>
+      <option value="https://v10.siar.us/rctv/live/playlist.m3u8">RCTV TV</option>
+      <option value="https://jawapostv.siar.us/jawapostv/live/playlist.m3u8">Jawa Pos TV</option>
+      <option value="https://inspiratv.siar.us/inspiratv/live/playlist.m3u8">Inspira TV</option>
+      <option value="https://live.cnbcindonesia.com/livecnbc/smil:cnbctv.smil/master.m3u8">CNBC TV</option>
+    </select>
+    <h2>Informasi</h2>
+    <div>∆ Channel Aktif: 13 ∆</div>
+    <div>Beberapa Channel Masih Dalam Proses</div>
+    <div>Tunggu Update Selanjutnya</div>
+    <div>&copy; aisyahnet</div><br>
+    <button onclick="logout()">Keluar</button>
+  </div>
+
+  <script>
+    const video = document.getElementById('video');
+    const select = document.getElementById('channelSelect');
+    const PASTEBIN_RAW_URL = "https://pastebin.com/raw/AFrERHKe";
+
+    let userData = [];
+
+    fetch(PASTEBIN_RAW_URL)
+      .then(res => res.text())
+      .then(text => {
+        userData = text.trim().split("\n").map(line => {
+          const [user, pass] = line.trim().split(":");
+          return { user: user.toLowerCase(), pass };
+        });
+      })
+      .catch(() => alert("Gagal ambil data pengguna dari Pastebin"));
+
+    function login() {
+      const username = document.getElementById("username").value.trim().toLowerCase();
+      const key = document.getElementById("key").value.trim();
+      const errorMsg = document.getElementById("errorMsg");
+
+      const found = userData.find(u => u.user === username && u.pass === key);
+
+      if (found) {
+        errorMsg.style.display = "none";
+        document.getElementById("login-box").style.display = "none";
+        document.getElementById("iptv-box").style.display = "block";
+        loadStream(select.value);
+      } else {
+        errorMsg.style.display = "block";
+      }
+    }
+
+    function logout() {
+      document.getElementById("iptv-box").style.display = "none";
+      document.getElementById("login-box").style.display = "block";
+      document.getElementById("username").value = "";
+      document.getElementById("key").value = "";
+      document.getElementById("errorMsg").style.display = "none";
+    }
+
+    function loadStream(url) {
+      if (Hls.isSupported()) {
+        const hls = new Hls();
+        hls.loadSource(url);
+        hls.attachMedia(video);
+        hls.on(Hls.Events.MANIFEST_PARSED, () => video.play());
+      } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+        video.src = url;
+        video.addEventListener('loadedmetadata', () => video.play());
+      } else {
+        alert("Browser Anda tidak mendukung streaming HLS.");
+      }
+    }
+
+    select.addEventListener('change', () => {
+      loadStream(select.value);
+    });
+
+    function disableKeys(e) {
+      if (
+        e.key === "F12" ||
+        (e.ctrlKey && e.shiftKey && ["I", "J", "C"].includes(e.key)) ||
+        (e.ctrlKey && e.key === "U")
+      ) {
+        return false;
+      }
+    }
+  </script>
+</body>
+</html>
