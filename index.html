@@ -2,26 +2,24 @@
 <html lang="id">
 <head>
   <meta charset="UTF-8">
-  <title>Aisyah IPTV - Login & Streaming</title>
+  <title>Aisyah IPTV STB</title>
   <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <script async src="https://www.tiktok.com/embed.js"></script>
   <style>
     body {
       font-family: sans-serif;
       background-color: #111;
       color: white;
       margin: 0;
-      padding: 0;
     }
     .container {
-      max-width: 720px;
-      margin: 0 auto;
+      max-width: 900px;
+      margin: auto;
       padding: 20px;
-      text-align: center;
     }
-    input, button, select {
+    input, button {
       padding: 10px;
-      margin: 10px;
+      margin: 10px 5px;
       border-radius: 5px;
       border: none;
       font-size: 16px;
@@ -33,171 +31,280 @@
     }
     video {
       width: 100%;
-      max-width: 720px;
-      height: auto;
-      border-radius: 5px;
-      box-shadow: 0 0 21px #000;
-      margin-top: 20px;
+      border-radius: 10px;
+      box-shadow: 0 0 15px #000;
+      margin-top: 15px;
     }
-    .error {
-      color: red;
-      display: none;
-    }
-    #iptv-box {
-      display: none;
-    }
-    a.whatsapp-button {
-      display: inline-block;
+    .error { color: red; display: none; }
+    .hidden { display: none; }
+    .tab {
+      display: flex;
+      justify-content: space-around;
+      background-color: #222;
       margin-top: 10px;
-      background-color: #25d366;
+      padding: 10px 0;
+    }
+    .tab button {
+      background: #333;
+      border: none;
       color: white;
       padding: 10px 20px;
+      cursor: pointer;
+    }
+    .tab button.active {
+      background: #28a745;
+    }
+    .playlist {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+      gap: 10px;
+      margin-top: 15px;
+    }
+    .channel {
+      background: #222;
+      padding: 10px;
+      border-radius: 10px;
+      cursor: pointer;
+      text-align: center;
+    }
+    iframe {
+      width: 100%;
+      height: 420px;
+      border: none;
+      border-radius: 10px;
+      margin-top: 15px;
+    }
+    .youtube-item {
+      background: #222;
+      margin: 5px 0;
+      padding: 10px;
+      border-radius: 10px;
+      cursor: pointer;
+      display: flex;
+      gap: 10px;
+    }
+    .youtube-item img {
+      width: 120px;
       border-radius: 5px;
+    }
+    .whatsapp {
+      position: fixed;
+      bottom: 15px;
+      right: 15px;
+      background-color: #25D366;
+      color: white;
+      border-radius: 50%;
+      width: 60px;
+      height: 60px;
+      font-size: 30px;
+      text-align: center;
+      line-height: 60px;
       text-decoration: none;
-      font-weight: bold;
-    }
-    a.whatsapp-button i {
-      margin-right: 8px;
-    }
-    label {
-      font-size: 14px;
+      z-index: 999;
     }
   </style>
 </head>
 <body oncontextmenu="return false;" onkeydown="return disableKeys(event)">
-  <div class="container" id="login-box">
-    <h1>Aisyah IPTV</h1>
-    <p>Login IPTV</p>
-    <input type="text" id="username" placeholder="Nama Pengguna"><br>
-    <input type="text" id="key" placeholder="Kode Akses"><br>
-    <label><input type="checkbox" id="rememberMe"> Ingat Saya</label><br>
-    <button onclick="login()">Masuk</button><br>
-    <a class="whatsapp-button" href="https://wa.me/6287776182361" target="_blank">
-      <i class="fab fa-whatsapp"></i> Hubungi Admin
-    </a>
-    <div class="error" id="errorMsg">Username atau Key salah!</div>
+
+<div class="container" id="login-box">
+  <h2>Aisyah IPTV</h2>
+  <input type="text" id="username" placeholder="Nama Pengguna"><br>
+  <input type="text" id="key" placeholder="Kode Akses"><br>
+  <label><input type="checkbox" id="rememberMe"> Ingat Saya</label><br>
+  <button onclick="login()">Masuk</button>
+  <div class="error" id="errorMsg">Username atau Key salah!</div>
+</div>
+
+<div class="container hidden" id="app-box">
+  <h1>Aisyah STB</h1>
+  <h2>Hallo <span id="userDisplay"></span> 👋</h2>
+
+  <div class="tab">
+    <button class="tab-btn active" onclick="showTab('iptv')">📺 IPTV</button>
+    <button class="tab-btn" onclick="showTab('youtube')">▶️ YouTube</button>
+    <button class="tab-btn" onclick="showTab('tiktok')">🎵 TikTok</button>
+    <button class="tab-btn" onclick="logout()">🚪 Logout</button>
   </div>
 
-  <div class="container" id="iptv-box">
-    <h1>Aisyah IPTV</h1>
-    <div id="welcomeUser" style="margin-bottom: 10px; font-size: 18px; color: #0f0;"></div>
-    <p>📺 Streaming TV Indonesia</p>
-    <video id="video" controls autoplay muted playsinline></video><br>
-    <label for="channelSelect">Pilih Channel:</label><br>
-    <select id="channelSelect">
-      <option value="https://nusantaratv.siar.us/nusantaratv/live/playlist.m3u8">Nusantara TV</option>
-      <option value="https://stream.jogjatv.co.id/jtvlive/stream/index.m3u8">Jogja TV</option>
-      <option value="https://primatv.siar.us/primatv/live/playlist.m3u8">Prima TV</option>
-      <option value="https://saktitv.siar.us/saktitv/live/playlist.m3u8">Sakti TV</option>
-      <option value="https://stream.carubantv.id/hls/0/stream.m3u8">Caruban TV</option>
-      <option value="https://ott-balancer.tvri.go.id/live/eds/TVRIWorld/hls/TVRIWorld.m3u8">TVRI World</option>
-      <option value="https://ott-balancer.tvri.go.id/live/eds/SportHD/hls/SportHD.m3u8">TVRI Sport</option>
-      <option value="https://video.detik.com/trans7/smil:trans7.smil/index.m3u8">Trans7 TV</option>
-      <option value="https://video.detik.com/transtv/smil:transtv.smil/index.m3u8">Trans TV</option>
-      <option value="https://v10.siar.us/rctv/live/playlist.m3u8">RCTV TV</option>
-      <option value="https://jawapostv.siar.us/jawapostv/live/playlist.m3u8">Jawa Pos TV</option>
-      <option value="https://inspiratv.siar.us/inspiratv/live/playlist.m3u8">Inspira TV</option>
-      <option value="https://live.cnbcindonesia.com/livecnbc/smil:cnbctv.smil/master.m3u8">CNBC TV</option>
-    </select>
-    <h2>Informasi</h2>
-    <div>∆ Channel Aktif: 13 ∆</div>
-    <div>Beberapa Channel Masih Dalam Proses</div>
-    <div>Tunggu Update Selanjutnya</div>
-    <div>&copy; aisyahnet</div><br>
-    <button onclick="logout()">Keluar</button>
+  <!-- IPTV Tab -->
+  <div id="iptv" class="tab-content">
+    <video id="video" controls autoplay muted playsinline></video>
+    <div class="playlist" id="playlist"></div>
   </div>
 
-  <script>
-    const video = document.getElementById('video');
-    const select = document.getElementById('channelSelect');
-    const usernameInput = document.getElementById('username');
-    const keyInput = document.getElementById('key');
-    const rememberMe = document.getElementById('rememberMe');
-    const errorMsg = document.getElementById('errorMsg');
-    const welcomeUser = document.getElementById('welcomeUser');
+  <!-- YouTube Tab -->
+  <div id="youtube" class="tab-content hidden">
+    <input type="text" id="youtubeQuery" placeholder="Cari Video YouTube">
+    <button onclick="searchYouTube()">Cari</button>
+    <div id="youtubeResults"></div>
+    <iframe id="youtubePlayer" class="hidden" allowfullscreen></iframe>
+  </div>
 
-    const PASTEBIN_RAW_URL = "https://raw.githubusercontent.com/andika290120/aisyah-iptv/main/users.txt";
-    let userData = [];
+  <!-- TikTok Tab -->
+  <div id="tiktok" class="tab-content hidden">
+    <blockquote class="tiktok-embed" cite="https://www.tiktok.com/@tiktok/video/7229893182675348742" data-video-id="7229893182675348742" style="max-width: 605px;min-width: 325px;">
+      <section></section>
+    </blockquote>
+  </div>
+</div>
 
-    // Cek localStorage saat halaman dibuka
-    window.onload = function () {
-      const savedUser = localStorage.getItem("iptv_user");
-      const savedKey = localStorage.getItem("iptv_key");
+<a class="whatsapp" href="https://wa.me/6287776182361" target="_blank">💬</a>
+
+<script>
+  const API_KEY = "AIzaSyDI6inhkDDo1eVOlGNjFb6PS6qtgt9ZlhA";
+  const video = document.getElementById("video");
+  const playlist = document.getElementById("playlist");
+  const PASTEBIN_RAW_URL = "https://raw.githubusercontent.com/andika290120/aisyah-iptv/main/users.txt";
+
+  const channels = [
+    { name: "Nusantara TV", url: "https://nusantaratv.siar.us/nusantaratv/live/playlist.m3u8" },
+    { name: "Jogja TV", url: "https://stream.jogjatv.co.id/jtvlive/stream/index.m3u8" },
+    { name: "Prima Tv", url: "https://primatv.siar.us/primatv/live/playlist.m3u8" },
+    { name: "TVRI World", url: "https://ott-balancer.tvri.go.id/live/eds/TVRIWorld/hls/TVRIWorld.m3u8" },
+        { name: "TVRI Sport", url: "https://ott-balancer.tvri.go.id/live/eds/SportHD/hls/SportHD.m3u8" },
+        { name: "Caruban TV", url: "https://ott-balancer.tvri.go.id/live/eds/TVRIWorld/hls/TVRIWorld.m3u8" },
+          { name: "Sakti Tv", url: "https://stream.carubantv.id/hls/0/stream.m3u8" },
+    { name: "Trans TV", url: "https://video.detik.com/transtv/smil:transtv.smil/index.m3u8" },
+    { name: "Trans7", url: "https://video.detik.com/trans7/smil:trans7.smil/index.m3u8" },
+    { name: "CNBC", url: "https://live.cnbcindonesia.com/livecnbc/smil:cnbctv.smil/master.m3u8" },
+        { name: "Jawapot TV", url: "https://jawapostv.siar.us/jawapostv/live/playlist.m3u8" },
+            { name: "Inspira Tv", url: "https://inspiratv.siar.us/inspiratv/live/playlist.m3u8" },
+  ];
+
+  let userData = [];
+
+  fetch(PASTEBIN_RAW_URL)
+    .then(res => res.text())
+    .then(text => {
+      userData = text.trim().split("\n").map(line => {
+        const [user, key] = line.trim().split(":");
+        return { user: user.toLowerCase(), key };
+      });
+
+      const savedUser = localStorage.getItem("username");
+      const savedKey = localStorage.getItem("key");
       if (savedUser && savedKey) {
-        usernameInput.value = savedUser;
-        keyInput.value = savedKey;
-        rememberMe.checked = true;
+        document.getElementById("username").value = savedUser;
+        document.getElementById("key").value = savedKey;
+        document.getElementById("rememberMe").checked = true;
+        login();
       }
-    };
-
-    fetch(PASTEBIN_RAW_URL)
-      .then(res => res.text())
-      .then(text => {
-        userData = text.trim().split("\n").map(line => {
-          const [user, pass] = line.trim().split(":");
-          return { user: user.toLowerCase(), pass };
-        });
-      })
-      .catch(() => alert("Gagal ambil data pengguna dari Pastebin"));
-
-    function login() {
-      const username = usernameInput.value.trim().toLowerCase();
-      const key = keyInput.value.trim();
-
-      const found = userData.find(u => u.user === username && u.pass === key);
-
-      if (found) {
-        if (rememberMe.checked) {
-          localStorage.setItem("iptv_user", username);
-          localStorage.setItem("iptv_key", key);
-        } else {
-          localStorage.removeItem("iptv_user");
-          localStorage.removeItem("iptv_key");
-        }
-
-        errorMsg.style.display = "none";
-        document.getElementById("login-box").style.display = "none";
-        document.getElementById("iptv-box").style.display = "block";
-        welcomeUser.innerText = "👋 Selamat datang, " + username;
-        loadStream(select.value);
-      } else {
-        errorMsg.style.display = "block";
-      }
-    }
-
-    function logout() {
-      document.getElementById("iptv-box").style.display = "none";
-      document.getElementById("login-box").style.display = "block";
-      welcomeUser.innerText = "";
-    }
-
-    function loadStream(url) {
-      if (Hls.isSupported()) {
-        const hls = new Hls();
-        hls.loadSource(url);
-        hls.attachMedia(video);
-        hls.on(Hls.Events.MANIFEST_PARSED, () => video.play());
-      } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
-        video.src = url;
-        video.addEventListener('loadedmetadata', () => video.play());
-      } else {
-        alert("Browser Anda tidak mendukung streaming HLS.");
-      }
-    }
-
-    select.addEventListener('change', () => {
-      loadStream(select.value);
     });
 
-    function disableKeys(e) {
-      if (
-        e.key === "F12" ||
-        (e.ctrlKey && e.shiftKey && ["I", "J", "C"].includes(e.key)) ||
-        (e.ctrlKey && e.key === "U")
-      ) {
-        return false;
+  function login() {
+    const username = document.getElementById("username").value.trim().toLowerCase();
+    const key = document.getElementById("key").value.trim();
+    const remember = document.getElementById("rememberMe").checked;
+    const errorMsg = document.getElementById("errorMsg");
+
+    const user = userData.find(u => u.user === username && u.key === key);
+
+    if (user) {
+      errorMsg.style.display = "none";
+      document.getElementById("login-box").classList.add("hidden");
+      document.getElementById("app-box").classList.remove("hidden");
+      document.getElementById("userDisplay").innerText = username;
+
+      if (remember) {
+        localStorage.setItem("username", username);
+        localStorage.setItem("key", key);
+      } else {
+        localStorage.clear();
       }
+
+      showChannels();
+      loadStream(channels[0].url);
+    } else {
+      errorMsg.style.display = "block";
     }
-  </script>
+  }
+
+  function logout() {
+    localStorage.clear();
+    document.getElementById("login-box").classList.remove("hidden");
+    document.getElementById("app-box").classList.add("hidden");
+    document.getElementById("username").value = "";
+    document.getElementById("key").value = "";
+  }
+
+  function loadStream(url) {
+    if (Hls.isSupported()) {
+      const hls = new Hls();
+      hls.loadSource(url);
+      hls.attachMedia(video);
+      hls.on(Hls.Events.MANIFEST_PARSED, () => video.play());
+    } else {
+      video.src = url;
+      video.play();
+    }
+  }
+
+  function showChannels() {
+    playlist.innerHTML = "";
+    channels.forEach(ch => {
+      const div = document.createElement("div");
+      div.className = "channel";
+      div.innerHTML = `<div>${ch.name}</div>`;
+      div.onclick = () => loadStream(ch.url);
+      playlist.appendChild(div);
+    });
+  }
+
+  function searchYouTube() {
+    const q = document.getElementById("youtubeQuery").value.trim();
+    const resDiv = document.getElementById("youtubeResults");
+    const player = document.getElementById("youtubePlayer");
+    player.classList.add("hidden");
+    player.src = "";
+
+    if (!q) return;
+
+    resDiv.innerHTML = "Mencari...";
+
+    fetch(`https://www.googleapis.com/youtube/v3/search?part=snippet&type=video&maxResults=6&q=${encodeURIComponent(q)}&key=${API_KEY}`)
+      .then(r => {
+        if (!r.ok) throw new Error(`HTTP ${r.status}`);
+        return r.json();
+      })
+      .then(data => {
+        if (!data.items || data.items.length === 0) {
+          resDiv.innerHTML = "Tidak ada video ditemukan.";
+          return;
+        }
+        resDiv.innerHTML = "";
+        data.items.forEach(item => {
+          const div = document.createElement("div");
+          div.className = "youtube-item";
+          div.innerHTML = `
+            <img src="${item.snippet.thumbnails.medium.url}">
+            <p>${item.snippet.title}</p>
+          `;
+          div.onclick = () => {
+            player.src = `https://www.youtube.com/embed/${item.id.videoId}?autoplay=1`;
+            player.classList.remove("hidden");
+            window.scrollTo(0, player.offsetTop - 50);
+          };
+          resDiv.appendChild(div);
+        });
+      })
+      .catch(err => {
+        resDiv.innerHTML = `Error API: ${err.message}`;
+        console.error(err);
+      });
+  }
+
+  function showTab(id) {
+    document.querySelectorAll(".tab-content").forEach(tab => tab.classList.add("hidden"));
+    document.getElementById(id).classList.remove("hidden");
+    document.querySelectorAll(".tab-btn").forEach(btn => btn.classList.remove("active"));
+    event.target.classList.add("active");
+  }
+
+  function disableKeys(e) {
+    if (e.key === "F12" || (e.ctrlKey && e.shiftKey && ["I", "J", "C"].includes(e.key)) || (e.ctrlKey && e.key === "U")) {
+      return false;
+    }
+  }
+</script>
 </body>
 </html>
