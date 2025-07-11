@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <title>Aisyah IPTV - Login & Streaming</title>
   <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
   <style>
     body {
       font-family: sans-serif;
@@ -45,20 +46,41 @@
     #iptv-box {
       display: none;
     }
+    a.whatsapp-button {
+      display: inline-block;
+      margin-top: 10px;
+      background-color: #25d366;
+      color: white;
+      padding: 10px 20px;
+      border-radius: 5px;
+      text-decoration: none;
+      font-weight: bold;
+    }
+    a.whatsapp-button i {
+      margin-right: 8px;
+    }
+    label {
+      font-size: 14px;
+    }
   </style>
 </head>
 <body oncontextmenu="return false;" onkeydown="return disableKeys(event)">
   <div class="container" id="login-box">
-    <H1>Aisyah IPTV</H1>
+    <h1>Aisyah IPTV</h1>
     <p>Login IPTV</p>
     <input type="text" id="username" placeholder="Nama Pengguna"><br>
     <input type="text" id="key" placeholder="Kode Akses"><br>
-    <button onclick="login()">Masuk</button>
+    <label><input type="checkbox" id="rememberMe"> Ingat Saya</label><br>
+    <button onclick="login()">Masuk</button><br>
+    <a class="whatsapp-button" href="https://wa.me/6287776182361" target="_blank">
+      <i class="fab fa-whatsapp"></i> Hubungi Admin
+    </a>
     <div class="error" id="errorMsg">Username atau Key salah!</div>
   </div>
 
   <div class="container" id="iptv-box">
     <h1>Aisyah IPTV</h1>
+    <div id="welcomeUser" style="margin-bottom: 10px; font-size: 18px; color: #0f0;"></div>
     <p>📺 Streaming TV Indonesia</p>
     <video id="video" controls autoplay muted playsinline></video><br>
     <label for="channelSelect">Pilih Channel:</label><br>
@@ -88,9 +110,25 @@
   <script>
     const video = document.getElementById('video');
     const select = document.getElementById('channelSelect');
-    const PASTEBIN_RAW_URL = "https://raw.githubusercontent.com/andika290120/aisyah-iptv/main/users.txt";
+    const usernameInput = document.getElementById('username');
+    const keyInput = document.getElementById('key');
+    const rememberMe = document.getElementById('rememberMe');
+    const errorMsg = document.getElementById('errorMsg');
+    const welcomeUser = document.getElementById('welcomeUser');
 
+    const PASTEBIN_RAW_URL = "https://raw.githubusercontent.com/andika290120/aisyah-iptv/main/users.txt";
     let userData = [];
+
+    // Cek localStorage saat halaman dibuka
+    window.onload = function () {
+      const savedUser = localStorage.getItem("iptv_user");
+      const savedKey = localStorage.getItem("iptv_key");
+      if (savedUser && savedKey) {
+        usernameInput.value = savedUser;
+        keyInput.value = savedKey;
+        rememberMe.checked = true;
+      }
+    };
 
     fetch(PASTEBIN_RAW_URL)
       .then(res => res.text())
@@ -103,16 +141,24 @@
       .catch(() => alert("Gagal ambil data pengguna dari Pastebin"));
 
     function login() {
-      const username = document.getElementById("username").value.trim().toLowerCase();
-      const key = document.getElementById("key").value.trim();
-      const errorMsg = document.getElementById("errorMsg");
+      const username = usernameInput.value.trim().toLowerCase();
+      const key = keyInput.value.trim();
 
       const found = userData.find(u => u.user === username && u.pass === key);
 
       if (found) {
+        if (rememberMe.checked) {
+          localStorage.setItem("iptv_user", username);
+          localStorage.setItem("iptv_key", key);
+        } else {
+          localStorage.removeItem("iptv_user");
+          localStorage.removeItem("iptv_key");
+        }
+
         errorMsg.style.display = "none";
         document.getElementById("login-box").style.display = "none";
         document.getElementById("iptv-box").style.display = "block";
+        welcomeUser.innerText = "👋 Selamat datang, " + username;
         loadStream(select.value);
       } else {
         errorMsg.style.display = "block";
@@ -122,9 +168,7 @@
     function logout() {
       document.getElementById("iptv-box").style.display = "none";
       document.getElementById("login-box").style.display = "block";
-      document.getElementById("username").value = "";
-      document.getElementById("key").value = "";
-      document.getElementById("errorMsg").style.display = "none";
+      welcomeUser.innerText = "";
     }
 
     function loadStream(url) {
